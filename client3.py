@@ -25,9 +25,8 @@ import urllib.request
 # Server API URLs
 QUERY = "http://localhost:8080/query?id={}"
 
-# 500 server request
+# 500 server requests
 N = 500
-
 
 def getDataPoint(quote):
     """ Produce all the needed values to generate a datapoint """
@@ -35,25 +34,65 @@ def getDataPoint(quote):
     stock = quote['stock']
     bid_price = float(quote['top_bid']['price'])
     ask_price = float(quote['top_ask']['price'])
-    price = bid_price
+    
+    # Calculate the stock price as the average of bid_price and ask_price
+    price = (bid_price + ask_price) / 2.0
+    
     return stock, bid_price, ask_price, price
-
 
 def getRatio(price_a, price_b):
     """ Get ratio of price_a and price_b """
     """ ------------- Update this function ------------- """
-    return 1
-
+    # Handle the case where price_b could be zero (avoid division by zero)
+    if price_b == 0:
+        ratio = "N/A"  # Handle as "Not Available" or any other appropriate value
+    else:
+        ratio = price_a / price_b
+    return ratio
 
 # Main
 if __name__ == "__main__":
+    # Initialize a dictionary to store stock prices
+    prices = {
+        'ABC': None,
+        'DEF': None
+    }
+
     # Query the price once every N seconds.
     for _ in iter(range(N)):
         quotes = json.loads(urllib.request.urlopen(QUERY.format(random.random())).read())
 
         """ ----------- Update to get the ratio --------------- """
+        # Initialize variables for calculating the ratio
+        price_A = None
+        price_B = None
+
         for quote in quotes:
             stock, bid_price, ask_price, price = getDataPoint(quote)
             print("Quoted %s at (bid:%s, ask:%s, price:%s)" % (stock, bid_price, ask_price, price))
+            
+            # Store the prices for stock A (ABC) and stock B (DEF)
+            if stock == 'ABC':
+                price_A = price
+            elif stock == 'DEF':
+                price_B = price
 
-        print("Ratio %s" % getRatio(price, price))
+        # Print prices for debugging
+        print("Price A (ABC):", price_A)
+        print("Price B (DEF):", price_B)
+
+        # Calculate and print the ratio, even if one price is None
+        if price_A is not None and price_B is not None:
+            ratio = getRatio(price_A, price_B)
+            print("Ratio %s" % ratio)
+        else:
+            print("Unable to calculate ratio due to missing prices.")
+
+        # Store the stock prices in the dictionary
+        prices['ABC'] = price_A
+        prices['DEF'] = price_B
+
+    # Print the final stock prices
+    print("Final Stock Prices:")
+    for stock, price in prices.items():
+        print("%s: %s" % (stock, price))
